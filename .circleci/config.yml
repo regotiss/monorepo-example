@@ -2,8 +2,17 @@
 # See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
+# this allows you to use CircleCI's dynamic configuration feature
+setup: true
+
+# the path-filtering orb is required to continue a pipeline based on
+# the path of an updated fileset
+orbs:
+  path-filtering: circleci/path-filtering@0.1.1
+
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
+
 jobs:
   say-hello:
     # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
@@ -21,6 +30,21 @@ jobs:
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
-  say-hello-workflow:
-    jobs:
-      - say-hello
+    # the trigger workflow is always triggered, regardless of the pipeline parameters.
+    trigger:
+      jobs:
+        - path-filtering/filter:
+            # Test which path is updated and set the parameter for continue_config
+            mapping: |
+              packages/simple-express-server/.* run-express true
+              packages/simple-react-app/.* run-react true
+
+            # Compare changes of the branch with main branch
+            base-revision: main
+
+            # this is the path of the configuration we should trigger once
+            # path filtering and pipeline parameter value updates are
+            # complete. In this case, we are using the parent dynamic
+            # configuration itself.
+
+            config-path: .circleci/continue_config.yml

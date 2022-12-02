@@ -1,0 +1,39 @@
+version: 2.1
+
+orbs:
+  node: circleci/node@5.0.2
+
+parameters:
+  run-express:
+    type: boolean
+    default: false
+  run-react:
+    type: boolean
+    default: false
+
+workflows:
+  run-express:
+    when: << pipeline.parameters.run-express >>
+    jobs:
+      - test
+
+  run-react:
+    when: << pipeline.parameters.run-react >>
+    jobs:
+      - test
+
+executors:
+  node:
+    docker:
+      - image: public.ecr.aws/docker/library/node:16.10-buster
+
+jobs:
+  test:
+    executor: node
+    steps:
+      - checkout
+      - run:
+          name: run tests
+          command: |
+            yarn
+            yarn test
