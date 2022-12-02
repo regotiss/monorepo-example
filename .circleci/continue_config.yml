@@ -15,12 +15,12 @@ workflows:
   run-express:
     when: << pipeline.parameters.run-express >>
     jobs:
-      - test
+      - test-express
 
   run-react:
     when: << pipeline.parameters.run-react >>
     jobs:
-      - test
+      - test-react
 
 executors:
   node:
@@ -28,7 +28,7 @@ executors:
       - image: public.ecr.aws/docker/library/node:16.10-buster
 
 jobs:
-  test:
+  test-react:
     executor: node
     steps:
       - checkout
@@ -36,3 +36,12 @@ jobs:
           name: run tests
           command: |
             yarn
+  test-express:
+    executor: node
+    steps:
+      - checkout
+      - run:
+          name: run tests
+          command: |
+            yarn
+            yarn test

@@ -19,7 +19,7 @@ function App() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          {_.toUpper("Learn React")}
+          {_.toUpper("Learn React11")}
         </a>
         <button
           onClick={() => {
