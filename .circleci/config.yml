@@ -5,46 +5,66 @@ version: 2.1
 # this allows you to use CircleCI's dynamic configuration feature
 setup: true
 
+
 # the path-filtering orb is required to continue a pipeline based on
 # the path of an updated fileset
 orbs:
   path-filtering: circleci/path-filtering@0.1.1
+  continuation: circleci/continuation@0.1.2
+  node: circleci/node@5.0.2
+
+parameters:
+  configure:
+    description: Run the configure step
+    type: boolean
+    default: true
+  name:
+    description: Name of the package being built
+    type: string
+    default: ""
+  params:
+    type: string
+    default: "{}"
+
 
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 
-jobs:
-  say-hello:
-    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
+executors:
+  node:
     docker:
-      - image: cimg/base:stable
-    # Add steps to the job
-    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
+      - image: public.ecr.aws/docker/library/node:16.10-buster
+
+jobs:
+  configure:
+    working_directory: ~/code
+    executor: node
     steps:
       - checkout
-      - run:
-          name: "Say hello"
-          command: "echo Hello, World!"
+      - add_ssh_keys:
+          fingerprints:
+            - "bb:89:ad:27:20:7d:a0:4a:35:e8:51:eb:ff:b8:e4:7f"
+      - run: |
+          sh .circleci/scripts/trigger.sh
+  trigger:
+    executor: continuation/default
+    steps:
+      - checkout
+      - continuation/continue:
+          configuration_path: ./.circleci/continue_config.yml
+          parameters: <<pipeline.parameters.params>>
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
     # the trigger workflow is always triggered, regardless of the pipeline parameters.
-    trigger:
-      jobs:
-        - path-filtering/filter:
-            # Test which path is updated and set the parameter for continue_config
-            mapping: |
-              packages/simple-express-server/.* run-express true
-              packages/simple-react-app/.* run-react true
+  version: 2
+  configure:
+    when: <<pipeline.parameters.configure>>
+    jobs:
+      - configure
 
-            # Compare changes of the branch with main branch
-            base-revision: main
-
-            # this is the path of the configuration we should trigger once
-            # path filtering and pipeline parameter value updates are
-            # complete. In this case, we are using the parent dynamic
-            # configuration itself.
-
-            config-path: .circleci/continue_config.yml
+  trigger:
+    unless: <<pipeline.parameters.configure>>
+    jobs:
+      - trigger

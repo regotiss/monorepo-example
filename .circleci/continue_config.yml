@@ -9,7 +9,7 @@ parameters:
     default: false
   run-react:
     type: boolean
-    default: false
+    default: true
 
 workflows:
   run-express:
