@@ -12,13 +12,7 @@ parameters:
     default: false
 
 workflows:
-  run-express:
-    when: << pipeline.parameters.run-express >>
-    jobs:
-      - test
-
-  run-react:
-    when: << pipeline.parameters.run-react >>
+  run:
     jobs:
       - test
 
@@ -27,12 +21,18 @@ executors:
     docker:
       - image: public.ecr.aws/docker/library/node:16.10-buster
 
+commands:
+  pull:
+    steps:
+      - checkout
+  test:
+    steps:
+      - pull
+      - run:
+          name: run tests
+          command: yarn
 jobs:
   test:
     executor: node
     steps:
-      - checkout
-      - run:
-          name: run tests
-          command: |
-            yarn
+      - test
